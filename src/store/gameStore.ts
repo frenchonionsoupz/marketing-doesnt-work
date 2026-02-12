@@ -1,30 +1,23 @@
 import { create } from 'zustand';
-import { v4 as uuidv4 } from 'uuid';
 import type { User, Answer, Progress } from '../types';
 import { TOTAL_QUESTIONS } from '../data/questions';
-
-function hashPassword(password: string): string {
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return 'h_' + Math.abs(hash).toString(36) + '_' + password.length;
-}
+import { supabase } from '../lib/supabase';
 
 interface GameState {
   user: User | null;
   progress: Progress;
   answers: Record<string, Answer>;
   isAuthenticated: boolean;
+  isLoading: boolean;
   startTime: string | null;
 
-  signUp: (email: string, password: string, displayName: string) => { success: boolean; error?: string };
-  logIn: (email: string, password: string) => { success: boolean; error?: string };
-  logOut: () => void;
-  deleteAccount: () => void;
+  // Auth — all async now
+  signUp: (email: string, password: string, displayName: string) => Promise<{ success: boolean; error?: string }>;
+  logIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 
+  // Data — optimistic local + async DB write
   saveAnswer: (questionId: string, questionText: string, answerText: string, level: string, sublevel: string | null) => void;
   getAnswer: (questionId: string) => string;
   setCurrentPosition: (level: string, sublevel: string | null, questionIndex: number) => void;
@@ -34,6 +27,9 @@ interface GameState {
   getAnswersForLevel: (level: string, sublevel?: string | null) => Answer[];
   resetLevel: (level: string) => void;
   getTimeInvested: () => string;
+
+  // Session bootstrap
+  initSession: () => Promise<void>;
 }
 
 function getDefaultProgress(): Progress {
@@ -50,126 +46,217 @@ function getDefaultProgress(): Progress {
   };
 }
 
-function loadUserData(userId: string): { progress: Progress; answers: Record<string, Answer>; startTime: string | null } {
-  const progressStr = localStorage.getItem(`progress_${userId}`);
-  const answersStr = localStorage.getItem(`answers_${userId}`);
-  const startTime = localStorage.getItem(`startTime_${userId}`);
+// ---------- Supabase helpers (fire-and-forget) ----------
+
+async function loadUserProfile(userId: string): Promise<User | null> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (!data) return null;
   return {
-    progress: progressStr ? JSON.parse(progressStr) : getDefaultProgress(),
-    answers: answersStr ? JSON.parse(answersStr) : {},
-    startTime,
+    id: data.id,
+    email: data.email,
+    displayName: data.display_name,
+    createdAt: data.created_at,
+    lastLogin: data.last_login,
   };
 }
 
-function saveProgress(userId: string, progress: Progress) {
-  localStorage.setItem(`progress_${userId}`, JSON.stringify(progress));
+async function loadProgress(userId: string): Promise<{ progress: Progress; startTime: string | null }> {
+  const { data } = await supabase
+    .from('progress')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (!data) return { progress: getDefaultProgress(), startTime: null };
+  return {
+    progress: {
+      currentLevel: data.current_level,
+      currentSublevel: data.current_sublevel,
+      currentQuestionIndex: data.current_question_index,
+      level1Completed: data.level_1_completed,
+      level2Completed: data.level_2_completed,
+      level3Completed: data.level_3_completed,
+      bossCompleted: data.boss_completed,
+      overallCompletionPercentage: data.overall_completion_percentage,
+      updatedAt: data.updated_at,
+    },
+    startTime: data.start_time,
+  };
 }
 
-function saveAnswers(userId: string, answers: Record<string, Answer>) {
-  localStorage.setItem(`answers_${userId}`, JSON.stringify(answers));
+async function loadAnswers(userId: string): Promise<Record<string, Answer>> {
+  const { data } = await supabase
+    .from('answers')
+    .select('*')
+    .eq('user_id', userId);
+
+  if (!data) return {};
+  const map: Record<string, Answer> = {};
+  for (const row of data) {
+    map[row.question_id] = {
+      questionId: row.question_id,
+      questionText: row.question_text,
+      answerText: row.answer_text,
+      level: row.level,
+      sublevel: row.sublevel,
+      answeredAt: row.answered_at,
+      updatedAt: row.updated_at,
+    };
+  }
+  return map;
 }
+
+function persistProgress(userId: string, progress: Progress, startTime: string | null) {
+  supabase.from('progress').upsert({
+    user_id: userId,
+    current_level: progress.currentLevel,
+    current_sublevel: progress.currentSublevel,
+    current_question_index: progress.currentQuestionIndex,
+    level_1_completed: progress.level1Completed,
+    level_2_completed: progress.level2Completed,
+    level_3_completed: progress.level3Completed,
+    boss_completed: progress.bossCompleted,
+    overall_completion_percentage: progress.overallCompletionPercentage,
+    start_time: startTime ?? new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'user_id' }).then(({ error }) => {
+    if (error) console.error('Progress save error:', error.message);
+  });
+}
+
+function persistAnswer(userId: string, answer: Answer) {
+  supabase.from('answers').upsert({
+    user_id: userId,
+    question_id: answer.questionId,
+    question_text: answer.questionText,
+    answer_text: answer.answerText,
+    level: answer.level,
+    sublevel: answer.sublevel,
+    answered_at: answer.answeredAt,
+    updated_at: answer.updatedAt,
+  }, { onConflict: 'user_id,question_id' }).then(({ error }) => {
+    if (error) console.error('Answer save error:', error.message);
+  });
+}
+
+// ---------- Store ----------
 
 export const useGameStore = create<GameState>((set, get) => ({
   user: null,
   progress: getDefaultProgress(),
   answers: {},
   isAuthenticated: false,
+  isLoading: true,
   startTime: null,
 
-  signUp: (email, password, displayName) => {
-    const users = JSON.parse(localStorage.getItem('users') || '{}');
-    if (users[email]) {
-      return { success: false, error: 'An account with this email already exists.' };
-    }
+  // ---- Auth ----
 
-    const user: User = {
-      id: uuidv4(),
+  signUp: async (email, password, displayName) => {
+    const { data, error } = await supabase.auth.signUp({
       email,
-      displayName,
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-    };
+      password,
+      options: { data: { display_name: displayName } },
+    });
 
-    users[email] = { ...user, passwordHash: hashPassword(password) };
-    localStorage.setItem('users', JSON.stringify(users));
+    if (error) return { success: false, error: error.message };
+    if (!data.user) return { success: false, error: 'Signup failed. Please try again.' };
 
-    const startTime = new Date().toISOString();
-    localStorage.setItem(`startTime_${user.id}`, startTime);
-    localStorage.setItem('currentUser', email);
+    // The DB trigger creates profile + progress rows automatically.
+    // Give the trigger a moment, then load.
+    await new Promise(r => setTimeout(r, 500));
+
+    const profile = await loadUserProfile(data.user.id);
+    const { progress, startTime } = await loadProgress(data.user.id);
+    const answers = await loadAnswers(data.user.id);
 
     set({
-      user,
-      progress: getDefaultProgress(),
-      answers: {},
+      user: profile ?? {
+        id: data.user.id,
+        email,
+        displayName,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      },
+      progress,
+      answers,
       isAuthenticated: true,
+      isLoading: false,
       startTime,
     });
 
     return { success: true };
   },
 
-  logIn: (email, password) => {
-    const users = JSON.parse(localStorage.getItem('users') || '{}');
-    const storedUser = users[email];
+  logIn: async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (!storedUser) {
-      return { success: false, error: 'No account found with this email.' };
-    }
+    if (error) return { success: false, error: error.message };
+    if (!data.user) return { success: false, error: 'Login failed.' };
 
-    if (storedUser.passwordHash !== hashPassword(password)) {
-      return { success: false, error: 'Incorrect password.' };
-    }
+    const profile = await loadUserProfile(data.user.id);
+    const { progress, startTime } = await loadProgress(data.user.id);
+    const answers = await loadAnswers(data.user.id);
 
-    storedUser.lastLogin = new Date().toISOString();
-    users[email] = storedUser;
-    localStorage.setItem('users', JSON.stringify(users));
-    localStorage.setItem('currentUser', email);
+    // Update last_login
+    supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', data.user.id);
 
-    const { progress, answers, startTime } = loadUserData(storedUser.id);
+    set({
+      user: profile ?? {
+        id: data.user.id,
+        email,
+        displayName: '',
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      },
+      progress,
+      answers,
+      isAuthenticated: true,
+      isLoading: false,
+      startTime,
+    });
 
-    const user: User = {
-      id: storedUser.id,
-      email: storedUser.email,
-      displayName: storedUser.displayName,
-      createdAt: storedUser.createdAt,
-      lastLogin: storedUser.lastLogin,
-    };
-
-    set({ user, progress, answers, isAuthenticated: true, startTime });
     return { success: true };
   },
 
-  logOut: () => {
-    localStorage.removeItem('currentUser');
+  logOut: async () => {
+    await supabase.auth.signOut();
     set({
       user: null,
       progress: getDefaultProgress(),
       answers: {},
       isAuthenticated: false,
+      isLoading: false,
       startTime: null,
     });
   },
 
-  deleteAccount: () => {
+  deleteAccount: async () => {
     const { user } = get();
     if (!user) return;
 
-    const users = JSON.parse(localStorage.getItem('users') || '{}');
-    delete users[user.email];
-    localStorage.setItem('users', JSON.stringify(users));
-    localStorage.removeItem(`progress_${user.id}`);
-    localStorage.removeItem(`answers_${user.id}`);
-    localStorage.removeItem(`startTime_${user.id}`);
-    localStorage.removeItem('currentUser');
+    // Delete user data (cascade will handle related rows)
+    // We delete from profiles which cascades to progress & answers
+    await supabase.from('answers').delete().eq('user_id', user.id);
+    await supabase.from('progress').delete().eq('user_id', user.id);
+    await supabase.from('profiles').delete().eq('id', user.id);
+    await supabase.auth.signOut();
 
     set({
       user: null,
       progress: getDefaultProgress(),
       answers: {},
       isAuthenticated: false,
+      isLoading: false,
       startTime: null,
     });
   },
+
+  // ---- Data (optimistic updates + background DB writes) ----
 
   saveAnswer: (questionId, questionText, answerText, level, sublevel) => {
     const { user, answers } = get();
@@ -188,21 +275,23 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const newAnswers = { ...answers, [questionId]: answer };
     set({ answers: newAnswers });
-    saveAnswers(user.id, newAnswers);
 
+    // Persist to Supabase (fire-and-forget)
+    persistAnswer(user.id, answer);
+
+    // Update completion percentage
     const percentage = get().getCompletionPercentage();
     const newProgress = { ...get().progress, overallCompletionPercentage: percentage, updatedAt: now };
     set({ progress: newProgress });
-    saveProgress(user.id, newProgress);
+    persistProgress(user.id, newProgress, get().startTime);
   },
 
   getAnswer: (questionId) => {
-    const { answers } = get();
-    return answers[questionId]?.answerText || '';
+    return get().answers[questionId]?.answerText || '';
   },
 
   setCurrentPosition: (level, sublevel, questionIndex) => {
-    const { user, progress } = get();
+    const { user, progress, startTime } = get();
     if (!user) return;
 
     const newProgress = {
@@ -213,11 +302,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     set({ progress: newProgress });
-    saveProgress(user.id, newProgress);
+    persistProgress(user.id, newProgress, startTime);
   },
 
   completeLevel: (level) => {
-    const { user, progress } = get();
+    const { user, progress, startTime } = get();
     if (!user) return;
 
     const updates: Partial<Progress> = { updatedAt: new Date().toISOString() };
@@ -229,7 +318,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newProgress = { ...progress, ...updates };
     newProgress.overallCompletionPercentage = get().getCompletionPercentage();
     set({ progress: newProgress });
-    saveProgress(user.id, newProgress);
+    persistProgress(user.id, newProgress, startTime);
   },
 
   getCompletionPercentage: () => {
@@ -269,15 +358,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   resetLevel: (level) => {
-    const { user, answers, progress } = get();
+    const { user, answers, progress, startTime } = get();
     if (!user) return;
 
+    // Collect question IDs to delete
+    const toDelete = Object.keys(answers).filter(key => answers[key].level === level);
     const newAnswers = { ...answers };
-    Object.keys(newAnswers).forEach(key => {
-      if (newAnswers[key].level === level) {
-        delete newAnswers[key];
-      }
-    });
+    toDelete.forEach(key => delete newAnswers[key]);
 
     const updates: Partial<Progress> = {};
     if (level === '1') updates.level1Completed = false;
@@ -287,8 +374,19 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const newProgress = { ...progress, ...updates, updatedAt: new Date().toISOString() };
     set({ answers: newAnswers, progress: newProgress });
-    saveAnswers(user.id, newAnswers);
-    saveProgress(user.id, newProgress);
+    persistProgress(user.id, newProgress, startTime);
+
+    // Delete answers from Supabase
+    if (toDelete.length > 0) {
+      supabase
+        .from('answers')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('level', level)
+        .then(({ error }) => {
+          if (error) console.error('Reset answers error:', error.message);
+        });
+    }
   },
 
   getTimeInvested: () => {
@@ -302,25 +400,39 @@ export const useGameStore = create<GameState>((set, get) => ({
     const remainMins = mins % 60;
     return `${hrs}h ${remainMins}m`;
   },
+
+  // ---- Session bootstrap ----
+
+  initSession: async () => {
+    set({ isLoading: true });
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+      set({ isLoading: false });
+      return;
+    }
+
+    const userId = session.user.id;
+    const [profile, progressData, answers] = await Promise.all([
+      loadUserProfile(userId),
+      loadProgress(userId),
+      loadAnswers(userId),
+    ]);
+
+    set({
+      user: profile ?? {
+        id: userId,
+        email: session.user.email ?? '',
+        displayName: session.user.user_metadata?.display_name ?? '',
+        createdAt: session.user.created_at,
+        lastLogin: new Date().toISOString(),
+      },
+      progress: progressData.progress,
+      answers,
+      isAuthenticated: true,
+      isLoading: false,
+      startTime: progressData.startTime,
+    });
+  },
 }));
-
-export function tryAutoLogin(): boolean {
-  const currentEmail = localStorage.getItem('currentUser');
-  if (!currentEmail) return false;
-
-  const users = JSON.parse(localStorage.getItem('users') || '{}');
-  const storedUser = users[currentEmail];
-  if (!storedUser) return false;
-
-  const { progress, answers, startTime } = loadUserData(storedUser.id);
-  const user: User = {
-    id: storedUser.id,
-    email: storedUser.email,
-    displayName: storedUser.displayName,
-    createdAt: storedUser.createdAt,
-    lastLogin: storedUser.lastLogin,
-  };
-
-  useGameStore.setState({ user, progress, answers, isAuthenticated: true, startTime });
-  return true;
-}

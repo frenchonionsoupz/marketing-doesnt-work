@@ -28,8 +28,8 @@ export function Profile() {
     generateMasterPdf(Object.values(answers), user.displayName, getTimeInvested());
   };
 
-  const handleDelete = () => {
-    deleteAccount();
+  const handleDelete = async () => {
+    await deleteAccount();
     navigate('/');
   };
 
@@ -127,7 +127,7 @@ export function Profile() {
           <button onClick={() => navigate('/hub')} className="retro-btn flex-1">
             BACK TO HUB
           </button>
-          <button onClick={() => { logOut(); navigate('/'); }} className="retro-btn flex-1">
+          <button onClick={async () => { await logOut(); navigate('/'); }} className="retro-btn flex-1">
             LOG OUT
           </button>
         </div>

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useGameStore, tryAutoLogin } from './store/gameStore';
+import { useGameStore } from './store/gameStore';
 import { ProgressBar } from './components/ProgressBar';
 import { CrtOverlay } from './components/CrtOverlay';
 import { Landing } from './pages/Landing';
@@ -14,6 +14,8 @@ import { Boss } from './pages/Boss';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useGameStore(s => s.isAuthenticated);
+  const isLoading = useGameStore(s => s.isLoading);
+  if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
@@ -30,9 +32,23 @@ function LevelRouter() {
 }
 
 export default function App() {
+  const initSession = useGameStore(s => s.initSession);
+  const isLoading = useGameStore(s => s.isLoading);
+
   useEffect(() => {
-    tryAutoLogin();
-  }, []);
+    initSession();
+  }, [initSession]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-retro-black text-retro-white font-pixel">
+        <CrtOverlay />
+        <div className="min-h-screen flex items-center justify-center bg-black">
+          <p className="text-retro-pink text-sm font-pixel animate-blink">LOADING...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>

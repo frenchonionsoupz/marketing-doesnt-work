@@ -13,11 +13,12 @@ export function AuthModal({ onClose, onSuccess, initialTab = 'signup' }: AuthMod
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const signUp = useGameStore(s => s.signUp);
   const logIn = useGameStore(s => s.logIn);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -35,14 +36,18 @@ export function AuthModal({ onClose, onSuccess, initialTab = 'signup' }: AuthMod
         setError('Password must be at least 6 characters.');
         return;
       }
-      const result = signUp(email, password, displayName);
+      setLoading(true);
+      const result = await signUp(email, password, displayName);
+      setLoading(false);
       if (result.success) {
         onSuccess();
       } else {
         setError(result.error || 'Signup failed.');
       }
     } else {
-      const result = logIn(email, password);
+      setLoading(true);
+      const result = await logIn(email, password);
+      setLoading(false);
       if (result.success) {
         onSuccess();
       } else {
@@ -85,6 +90,7 @@ export function AuthModal({ onClose, onSuccess, initialTab = 'signup' }: AuthMod
                 className="retro-input"
                 placeholder="Enter your name..."
                 autoFocus
+                disabled={loading}
               />
             </div>
           )}
@@ -98,6 +104,7 @@ export function AuthModal({ onClose, onSuccess, initialTab = 'signup' }: AuthMod
               className="retro-input"
               placeholder="player@email.com"
               autoFocus={tab === 'login'}
+              disabled={loading}
             />
           </div>
 
@@ -109,6 +116,7 @@ export function AuthModal({ onClose, onSuccess, initialTab = 'signup' }: AuthMod
               onChange={e => setPassword(e.target.value)}
               className="retro-input"
               placeholder="••••••••"
+              disabled={loading}
             />
           </div>
 
@@ -119,10 +127,10 @@ export function AuthModal({ onClose, onSuccess, initialTab = 'signup' }: AuthMod
           )}
 
           <div className="flex gap-4 pt-2">
-            <button type="submit" className="retro-btn retro-btn-primary flex-1">
-              {tab === 'signup' ? 'START GAME' : 'LOG IN'}
+            <button type="submit" className="retro-btn retro-btn-primary flex-1" disabled={loading}>
+              {loading ? 'LOADING...' : tab === 'signup' ? 'START GAME' : 'LOG IN'}
             </button>
-            <button type="button" onClick={onClose} className="retro-btn flex-1">
+            <button type="button" onClick={onClose} className="retro-btn flex-1" disabled={loading}>
               BACK
             </button>
           </div>

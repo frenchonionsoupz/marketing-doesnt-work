@@ -89,7 +89,7 @@ export function Hub() {
             <button onClick={() => navigate('/profile')} className="retro-btn text-[8px]">
               PROFILE
             </button>
-            <button onClick={() => { logOut(); navigate('/'); }} className="retro-btn text-[8px]">
+            <button onClick={async () => { await logOut(); navigate('/'); }} className="retro-btn text-[8px]">
               LOG OUT
             </button>
           </div>
