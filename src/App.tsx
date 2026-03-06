@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useGameStore } from './store/gameStore';
+import { AudioProvider } from './context/AudioContext';
+import { AudioPlayer } from './components/AudioPlayer';
 import { OpeningCrawl } from './pages/OpeningCrawl';
 import { OpeningOracle } from './pages/OpeningOracle';
 import { Signup } from './pages/Signup';
@@ -45,31 +47,36 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Opening flow */}
-        <Route path="/" element={<OpeningCrawl />} />
-        <Route path="/oracle" element={<OpeningOracle />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/philosophy" element={<Philosophy />} />
+    <AudioProvider>
+      <BrowserRouter>
+        {/* AudioPlayer is outside Routes so it persists across all page navigations */}
+        <AudioPlayer />
 
-        {/* Protected game routes */}
-        <Route path="/map" element={
-          <ProtectedRoute><QuestMap /></ProtectedRoute>
-        } />
-        <Route path="/quest/:level" element={
-          <ProtectedRoute><QuestScreen /></ProtectedRoute>
-        } />
-        <Route path="/level-complete/:level" element={
-          <ProtectedRoute><LevelComplete /></ProtectedRoute>
-        } />
-        <Route path="/quest-complete" element={
-          <ProtectedRoute><QuestComplete /></ProtectedRoute>
-        } />
+        <Routes>
+          {/* Opening flow */}
+          <Route path="/" element={<OpeningCrawl />} />
+          <Route path="/oracle" element={<OpeningOracle />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/philosophy" element={<Philosophy />} />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Protected game routes */}
+          <Route path="/map" element={
+            <ProtectedRoute><QuestMap /></ProtectedRoute>
+          } />
+          <Route path="/quest/:level" element={
+            <ProtectedRoute><QuestScreen /></ProtectedRoute>
+          } />
+          <Route path="/level-complete/:level" element={
+            <ProtectedRoute><LevelComplete /></ProtectedRoute>
+          } />
+          <Route path="/quest-complete" element={
+            <ProtectedRoute><QuestComplete /></ProtectedRoute>
+          } />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AudioProvider>
   );
 }
