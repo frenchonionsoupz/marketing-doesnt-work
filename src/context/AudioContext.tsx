@@ -47,7 +47,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     if (!track || !audio) return;
 
     indexRef.current = idx;
-    audio.src = `/audio/${track.file}`;
+    audio.src = `https://wcmbywfvikobgyebxmmx.supabase.co/storage/v1/object/public/audio/${encodeURIComponent(track.file)}`;
     audio.play()
       .then(() => {
         setPlaying(true);
