@@ -17,6 +17,7 @@ interface AudioContextValue {
   playing: boolean;
   nowPlayingVisible: boolean;
   toggleMute: () => void;
+  skipTrack: () => void;
 }
 
 const AudioCtx = createContext<AudioContextValue>({
@@ -25,6 +26,7 @@ const AudioCtx = createContext<AudioContextValue>({
   playing: false,
   nowPlayingVisible: false,
   toggleMute: () => {},
+  skipTrack: () => {},
 });
 
 export function AudioProvider({ children }: { children: ReactNode }) {
@@ -130,8 +132,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setMuted(newMuted);
   };
 
+  const skipTrack = () => {
+    const next = indexRef.current + 1;
+    if (next < playlistRef.current.length) {
+      playIndexRef.current(next);
+    }
+  };
+
   return (
-    <AudioCtx.Provider value={{ currentTrack, muted, playing, nowPlayingVisible, toggleMute }}>
+    <AudioCtx.Provider value={{ currentTrack, muted, playing, nowPlayingVisible, toggleMute, skipTrack }}>
       {children}
     </AudioCtx.Provider>
   );
