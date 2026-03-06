@@ -219,30 +219,43 @@ export function QuestScreen() {
                       rows={4}
                       value={draft}
                       onChange={e => setDraft(e.target.value)}
+                      onKeyDown={e => {
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                          e.preventDefault();
+                          sealAnswer();
+                        }
+                      }}
                       autoFocus
                     />
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
                       <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: 'rgba(26,16,8,0.35)' }}>
                         {draft.length} characters
                       </div>
-                      <button
-                        onClick={sealAnswer}
-                        style={{
-                          fontFamily: "'Press Start 2P', monospace",
-                          fontSize: '7px',
-                          padding: '8px 14px',
-                          background: canSeal ? '#1a1008' : 'rgba(26,16,8,0.3)',
-                          color: canSeal ? '#e8d9b0' : 'rgba(232,217,176,0.4)',
-                          border: 'none',
-                          cursor: canSeal ? 'pointer' : 'not-allowed',
-                          opacity: canSeal ? 1 : 0.5,
-                          boxShadow: canSeal ? '2px 2px 0 #000' : 'none',
-                          transition: 'opacity 0.2s',
-                        }}
-                        disabled={!canSeal}
-                      >
-                        {sealedFeedback ? 'SEALED ✓' : 'SEAL ✓'}
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {canSeal && (
+                          <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '5px', color: 'rgba(26,16,8,0.35)' }}>
+                            CTRL+↵
+                          </div>
+                        )}
+                        <button
+                          onClick={sealAnswer}
+                          style={{
+                            fontFamily: "'Press Start 2P', monospace",
+                            fontSize: '7px',
+                            padding: '8px 14px',
+                            background: canSeal ? '#1a1008' : 'rgba(26,16,8,0.3)',
+                            color: canSeal ? '#e8d9b0' : 'rgba(232,217,176,0.4)',
+                            border: 'none',
+                            cursor: canSeal ? 'pointer' : 'not-allowed',
+                            opacity: canSeal ? 1 : 0.5,
+                            boxShadow: canSeal ? '2px 2px 0 #000' : 'none',
+                            transition: 'opacity 0.2s',
+                          }}
+                          disabled={!canSeal}
+                        >
+                          {sealedFeedback ? 'SEALED ✓' : 'SEAL ✓'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="scroll-curl bottom" />
