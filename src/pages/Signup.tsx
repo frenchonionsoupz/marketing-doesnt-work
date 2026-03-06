@@ -77,7 +77,7 @@ export function Signup() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', position: 'relative' }}>
       <SceneBackground />
 
       <div style={{

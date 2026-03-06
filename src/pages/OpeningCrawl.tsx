@@ -73,7 +73,7 @@ export function OpeningCrawl() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', position: 'relative' }}>
       <SceneBackground />
 
       {/* Skip button */}
@@ -105,6 +105,7 @@ export function OpeningCrawl() {
         inset: 0,
         display: 'flex',
         alignItems: 'center',
+        paddingBottom: '140px',
         justifyContent: 'center',
         zIndex: 10,
       }}>

@@ -47,7 +47,7 @@ export function QuestMap() {
   const completedCount = progress.levelsCompleted.filter(Boolean).length;
 
   return (
-    <div style={{ minHeight: '100vh', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', position: 'relative' }}>
       <SceneBackground />
 
       {/* Logout */}
@@ -80,12 +80,12 @@ export function QuestMap() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: '32px 20px 40px',
+        padding: '20px 20px 180px',
       }}>
         {/* Header */}
         <div style={{
           textAlign: 'center',
-          marginBottom: '24px',
+          marginBottom: '12px',
           animation: 'fadeUp 0.7s ease forwards 0.2s',
           opacity: 0,
         }}>
@@ -124,7 +124,7 @@ export function QuestMap() {
           lineHeight: '2',
           textAlign: 'center',
           maxWidth: '500px',
-          marginBottom: '32px',
+          marginBottom: '16px',
           boxShadow: '0 0 16px rgba(87,247,255,0.1)',
           position: 'relative',
           animation: 'fadeUp 0.7s ease forwards 0.5s',
@@ -284,7 +284,7 @@ export function QuestMap() {
         <div style={{
           width: '100%',
           maxWidth: '700px',
-          marginTop: '28px',
+          marginTop: '12px',
           animation: 'fadeUp 0.7s ease forwards 1.2s',
           opacity: 0,
         }}>
@@ -319,7 +319,7 @@ export function QuestMap() {
 
         {/* CTA */}
         <div style={{
-          marginTop: '32px',
+          marginTop: '16px',
           textAlign: 'center',
           animation: 'fadeUp 0.7s ease forwards 1.5s',
           opacity: 0,
