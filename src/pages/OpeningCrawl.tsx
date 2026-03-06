@@ -11,18 +11,18 @@ interface CrawlItem {
 }
 
 const SEQUENCE: CrawlItem[] = [
-  { id: 'l0', type: 'line', text: 'IN A LAND WHERE EVERY BUSINESS', variant: 'dim', delay: 400 },
-  { id: 'l1', type: 'line', text: 'LOOKS THE SAME…', variant: 'bold-white', delay: 1200 },
-  { id: 'l2', type: 'line', text: 'SOUNDS THE SAME…', variant: 'bold-white', delay: 2000 },
-  { id: 'l3', type: 'line', text: 'AND GETS IGNORED THE SAME…', variant: 'bold-white', delay: 2800 },
-  { id: 'sep1', type: 'sep', delay: 3600 },
-  { id: 'l4', type: 'line', text: 'ONE FOUNDER DARES TO ASK', variant: 'normal', delay: 4200 },
-  { id: 'l5', type: 'line', text: 'A DIFFERENT QUESTION.', variant: 'accent', delay: 5000 },
-  { id: 'sep2', type: 'sep', delay: 5700 },
-  { id: 'l6', type: 'line', text: 'NOT "WHAT IS THE PLAYBOOK?"', variant: 'dim', delay: 6400 },
-  { id: 'box', type: 'box', delay: 7400 },
-  { id: 'l7', type: 'line', text: 'YOUR QUEST BEGINS NOW.', variant: 'gold', delay: 9000 },
-  { id: 'begin', type: 'button', delay: 10200 },
+  { id: 'l0', type: 'line', text: 'IN A LAND WHERE EVERY BUSINESS', variant: 'dim', delay: 150 },
+  { id: 'l1', type: 'line', text: 'LOOKS THE SAME…', variant: 'bold-white', delay: 500 },
+  { id: 'l2', type: 'line', text: 'SOUNDS THE SAME…', variant: 'bold-white', delay: 850 },
+  { id: 'l3', type: 'line', text: 'AND GETS IGNORED THE SAME…', variant: 'bold-white', delay: 1200 },
+  { id: 'sep1', type: 'sep', delay: 1500 },
+  { id: 'l4', type: 'line', text: 'ONE FOUNDER DARES TO ASK', variant: 'normal', delay: 1750 },
+  { id: 'l5', type: 'line', text: 'A DIFFERENT QUESTION.', variant: 'accent', delay: 2100 },
+  { id: 'sep2', type: 'sep', delay: 2400 },
+  { id: 'l6', type: 'line', text: 'NOT "WHAT IS THE PLAYBOOK?"', variant: 'dim', delay: 2700 },
+  { id: 'box', type: 'box', delay: 3200 },
+  { id: 'l7', type: 'line', text: 'YOUR QUEST BEGINS NOW.', variant: 'gold', delay: 4200 },
+  { id: 'begin', type: 'button', delay: 5000 },
 ];
 
 function lineStyle(variant?: string): React.CSSProperties {
@@ -66,11 +66,9 @@ export function OpeningCrawl() {
 
   const show = (id: string) => visible.has(id);
 
-  const fadeStyle = (id: string): React.CSSProperties => ({
-    opacity: show(id) ? 1 : 0,
-    transform: show(id) ? 'translateY(0)' : 'translateY(10px)',
-    transition: 'opacity 0.6s ease, transform 0.6s ease',
-  });
+  const fadeStyle = (id: string): React.CSSProperties => show(id)
+    ? { animation: 'crawl-slam 0.28s ease-out forwards' }
+    : { opacity: 0 };
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>

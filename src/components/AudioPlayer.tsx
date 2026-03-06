@@ -3,8 +3,9 @@ import { useAudio } from '../context/AudioContext';
 import { TRACKS } from '../data/tracks';
 
 export function AudioPlayer() {
-  const { currentTrack, muted, toggleMute, nowPlayingVisible } = useAudio();
+  const { currentTrack, muted, toggleMute, skipTrack, nowPlayingVisible } = useAudio();
   const [hovered, setHovered] = useState(false);
+  const [skipHovered, setSkipHovered] = useState(false);
 
   // Nothing to render if no tracks configured
   if (TRACKS.length === 0) return null;
@@ -53,30 +54,52 @@ export function AudioPlayer() {
         </div>
       </div>
 
-      {/* Mute/unmute — always visible, fades when not hovered */}
-      <button
-        onClick={toggleMute}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        aria-label={muted ? 'Unmute music' : 'Mute music'}
-        style={{
-          pointerEvents: 'all',
-          fontFamily: "'Press Start 2P', monospace",
-          fontSize: '10px',
-          padding: '7px 10px',
-          background: 'rgba(6,6,30,0.88)',
-          border: `2px solid ${muted ? '#2a2a5a' : '#ffdd57'}`,
-          color: muted ? '#2a2a5a' : '#ffdd57',
-          cursor: 'pointer',
-          letterSpacing: '1px',
-          lineHeight: 1,
-          // Fades to 30% when not hovered, fully visible on hover
-          opacity: hovered ? 1 : 0.3,
-          transition: 'opacity 0.35s ease, border-color 0.2s, color 0.2s',
-        }}
-      >
-        {muted ? '✕♫' : '♫'}
-      </button>
+      {/* Skip + Mute row */}
+      <div style={{ pointerEvents: 'all', display: 'flex', gap: '6px' }}>
+        <button
+          onClick={skipTrack}
+          onMouseEnter={() => setSkipHovered(true)}
+          onMouseLeave={() => setSkipHovered(false)}
+          aria-label="Skip to next track"
+          style={{
+            fontFamily: "'Press Start 2P', monospace",
+            fontSize: '10px',
+            padding: '7px 10px',
+            background: 'rgba(6,6,30,0.88)',
+            border: '2px solid #ffdd57',
+            color: '#ffdd57',
+            cursor: 'pointer',
+            letterSpacing: '1px',
+            lineHeight: 1,
+            opacity: skipHovered ? 1 : 0.3,
+            transition: 'opacity 0.35s ease',
+          }}
+        >
+          ▶▶
+        </button>
+
+        <button
+          onClick={toggleMute}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          aria-label={muted ? 'Unmute music' : 'Mute music'}
+          style={{
+            fontFamily: "'Press Start 2P', monospace",
+            fontSize: '10px',
+            padding: '7px 10px',
+            background: 'rgba(6,6,30,0.88)',
+            border: `2px solid ${muted ? '#2a2a5a' : '#ffdd57'}`,
+            color: muted ? '#2a2a5a' : '#ffdd57',
+            cursor: 'pointer',
+            letterSpacing: '1px',
+            lineHeight: 1,
+            opacity: hovered ? 1 : 0.3,
+            transition: 'opacity 0.35s ease, border-color 0.2s, color 0.2s',
+          }}
+        >
+          {muted ? '✕♫' : '♫'}
+        </button>
+      </div>
     </div>
   );
 }
