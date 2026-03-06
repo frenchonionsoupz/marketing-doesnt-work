@@ -103,18 +103,22 @@ export function OpeningCrawl() {
       <div style={{
         position: 'fixed',
         inset: 0,
-        display: 'flex',
-        alignItems: 'center',
-        paddingBottom: '140px',
-        justifyContent: 'center',
+        overflowY: 'auto',
         zIndex: 10,
       }}>
+        <div style={{
+          minHeight: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '60px 24px 160px',
+        }}>
         <div style={{
           position: 'relative',
           zIndex: 10,
           textAlign: 'center',
           maxWidth: '640px',
-          padding: '0 24px',
+          width: '100%',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -181,6 +185,7 @@ export function OpeningCrawl() {
               </div>
             );
           })}
+        </div>
         </div>
       </div>
     </div>
