@@ -20,6 +20,7 @@ export function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [optedIn, setOptedIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [shaking, setShaking] = useState(false);
@@ -62,7 +63,11 @@ export function Signup() {
 
     setLoading(false);
     if (!result.success) {
-      setError(result.error || 'Something went wrong.');
+      const raw = result.error || 'Something went wrong.';
+      const msg = raw.toLowerCase().includes('email not confirmed')
+        ? 'Email not confirmed. Check your inbox — or ask the admin to disable email confirmation in Supabase.'
+        : raw;
+      setError(msg);
       shake();
       return;
     }
@@ -172,15 +177,41 @@ export function Signup() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#8888aa', letterSpacing: '2px' }}>YOUR WORD (PASSWORD)</div>
-              <input
-                className="pixel-input"
-                type="password"
-                placeholder="at least 6 characters..."
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                disabled={loading}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  className="pixel-input"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="at least 6 characters..."
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                  disabled={loading}
+                  style={{ paddingRight: '80px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontFamily: "'Press Start 2P', monospace",
+                    fontSize: '6px',
+                    color: '#2a2a5a',
+                    letterSpacing: '1px',
+                    transition: 'color 0.2s',
+                    padding: '4px',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#57f7ff')}
+                  onMouseLeave={e => (e.currentTarget.style.color = '#2a2a5a')}
+                >
+                  {showPassword ? 'HIDE' : 'SHOW'}
+                </button>
+              </div>
             </div>
           </div>
 
