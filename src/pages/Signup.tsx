@@ -49,11 +49,7 @@ export function Signup() {
 
   const handleSubmit = async () => {
     const err = validate();
-    if (err) {
-      setError(err);
-      shake();
-      return;
-    }
+    if (err) { setError(err); shake(); return; }
     setError('');
     setLoading(true);
 
@@ -65,7 +61,7 @@ export function Signup() {
     if (!result.success) {
       const raw = result.error || 'Something went wrong.';
       const msg = raw.toLowerCase().includes('email not confirmed')
-        ? 'Email not confirmed. Check your inbox — or ask the admin to disable email confirmation in Supabase.'
+        ? 'Email not confirmed — disable this in Supabase Auth settings.'
         : raw;
       setError(msg);
       shake();
@@ -82,34 +78,33 @@ export function Signup() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative' }}>
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
       <SceneBackground />
 
       <div style={{
         position: 'relative',
         zIndex: 10,
-        minHeight: '100vh',
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '60px 20px 180px',
+        padding: '12px 20px',
+        gap: '10px',
       }}>
-        {/* Oracle */}
+        {/* Oracle — small */}
         <div style={{
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
-          gap: '6px',
-          marginBottom: '24px',
+          gap: '10px',
           animation: 'fadeUp 0.7s ease forwards 0.3s',
           opacity: 0,
         }}>
+          <div className="animate-oracle-float">
+            <OracleSvg width={44} height={55} />
+          </div>
           <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#ffdd57', letterSpacing: '2px', animation: 'blink-soft 2s ease-in-out infinite' }}>
             ✦ THE ORACLE ✦
-          </div>
-          <div className="animate-oracle-float">
-            <OracleSvg />
           </div>
         </div>
 
@@ -119,37 +114,37 @@ export function Signup() {
           className="dialogue-box-ui"
           style={{
             width: '100%',
-            maxWidth: '560px',
-            animation: `fadeUp 0.7s ease forwards 0.7s${shaking ? ', shake 0.3s ease' : ''}`,
+            maxWidth: '500px',
+            animation: `fadeUp 0.7s ease forwards 0.6s${shaking ? ', shake 0.3s ease' : ''}`,
             opacity: 0,
           }}
         >
           {/* Oracle line */}
           <div style={{
             fontFamily: "'Press Start 2P', monospace",
-            fontSize: '9px',
+            fontSize: '8px',
             color: '#f0f0f0',
-            lineHeight: '2.4',
-            marginBottom: '28px',
+            lineHeight: '2.2',
+            marginBottom: '14px',
           }}>
             {oracleLine === 'prompt'
               ? <>
                   {mode === 'signup'
-                    ? <>"Before you begin, I need your{' '}<span style={{ color: '#57f7ff' }}>name</span>{' '}and your{' '}<span style={{ color: '#57f7ff' }}>word</span>."</>
-                    : <>"Welcome back, traveller. Speak your <span style={{ color: '#57f7ff' }}>credentials</span>."</>
+                    ? <>"Before you begin, I need your <span style={{ color: '#57f7ff' }}>name</span> and your <span style={{ color: '#57f7ff' }}>word</span>."</>
+                    : <>"Welcome back. Speak your <span style={{ color: '#57f7ff' }}>credentials</span>."</>
                   }
                 </>
-              : <>"Welcome, <span style={{ color: '#57f7ff' }}>{welcomeName}</span>.<br/>Your quest begins now."</>
+              : <>"Welcome, <span style={{ color: '#57f7ff' }}>{welcomeName}</span>. Your quest begins now."</>
             }
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid #1a1a4a', marginBottom: '24px' }} />
+          <hr style={{ border: 'none', borderTop: '1px solid #1a1a4a', marginBottom: '14px' }} />
 
           {/* Fields */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
             {mode === 'signup' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#8888aa', letterSpacing: '2px' }}>YOUR NAME</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '6px', color: '#8888aa', letterSpacing: '2px' }}>YOUR NAME</div>
                 <input
                   className="pixel-input"
                   type="text"
@@ -159,11 +154,12 @@ export function Signup() {
                   onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                   disabled={loading}
                   autoFocus
+                  style={{ padding: '10px 12px' }}
                 />
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#8888aa', letterSpacing: '2px' }}>YOUR EMAIL</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '6px', color: '#8888aa', letterSpacing: '2px' }}>YOUR EMAIL</div>
               <input
                 className="pixel-input"
                 type="email"
@@ -173,10 +169,11 @@ export function Signup() {
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                 disabled={loading}
                 autoFocus={mode === 'login'}
+                style={{ padding: '10px 12px' }}
               />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#8888aa', letterSpacing: '2px' }}>YOUR WORD (PASSWORD)</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '6px', color: '#8888aa', letterSpacing: '2px' }}>PASSWORD</div>
               <div style={{ position: 'relative' }}>
                 <input
                   className="pixel-input"
@@ -186,14 +183,14 @@ export function Signup() {
                   onChange={e => setPassword(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                   disabled={loading}
-                  style={{ paddingRight: '80px' }}
+                  style={{ padding: '10px 12px', paddingRight: '70px' }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
                   style={{
                     position: 'absolute',
-                    right: '10px',
+                    right: '8px',
                     top: '50%',
                     transform: 'translateY(-50%)',
                     background: 'none',
@@ -222,30 +219,28 @@ export function Signup() {
               style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-                gap: '14px',
-                marginBottom: '28px',
+                gap: '10px',
+                marginBottom: '12px',
                 cursor: 'pointer',
-                padding: '14px',
+                padding: '10px',
                 border: `2px solid ${optedIn ? '#8b6914' : '#1a1a4a'}`,
                 background: optedIn ? 'rgba(139,105,20,0.08)' : '#08081a',
                 transition: 'border-color 0.2s',
               }}
             >
               <div style={{
-                width: '20px', height: '20px',
-                border: `3px solid ${optedIn ? '#ffdd57' : '#2a2a5a'}`,
+                width: '16px', height: '16px',
+                border: `2px solid ${optedIn ? '#ffdd57' : '#2a2a5a'}`,
                 background: optedIn ? '#ffdd57' : 'transparent',
                 flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'border-color 0.2s, background 0.2s',
-                marginTop: '2px',
+                marginTop: '1px',
               }}>
-                {optedIn && <span style={{ fontSize: '10px', color: '#000', lineHeight: 1 }}>✓</span>}
+                {optedIn && <span style={{ fontSize: '9px', color: '#000', lineHeight: 1 }}>✓</span>}
               </div>
-              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#8888aa', lineHeight: '2.4' }}>
-                I accept the{' '}
-                <span style={{ color: '#ffdd57' }}>Oracle's very occasional correspondence</span>
-                {' '}— no promos or spam.
+              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '6px', color: '#8888aa', lineHeight: '2.2' }}>
+                Accept the <span style={{ color: '#ffdd57' }}>Oracle's very occasional correspondence</span> — no spam.
               </div>
             </div>
           )}
@@ -254,12 +249,13 @@ export function Signup() {
           {error && (
             <div style={{
               fontFamily: "'Press Start 2P', monospace",
-              fontSize: '7px',
+              fontSize: '6px',
               color: '#ff6bbd',
-              marginBottom: '16px',
-              padding: '10px',
+              marginBottom: '10px',
+              padding: '8px',
               border: '2px solid #ff6bbd',
               background: 'rgba(255,107,189,0.05)',
+              lineHeight: '2',
             }}>
               ⚠ {error}
             </div>
@@ -268,19 +264,19 @@ export function Signup() {
           {/* Submit */}
           <button
             className="btn-gold"
-            style={{ width: '100%', padding: '18px', fontSize: '11px' }}
+            style={{ width: '100%', padding: '14px', fontSize: '10px' }}
             onClick={handleSubmit}
             disabled={loading}
           >
             {loading ? '...' : mode === 'signup' ? '▶ BEGIN MY QUEST' : '▶ CONTINUE QUEST'}
           </button>
 
-          {/* Toggle */}
+          {/* Toggle mode */}
           <div style={{
             textAlign: 'center',
-            marginTop: '16px',
+            marginTop: '12px',
             fontFamily: "'Press Start 2P', monospace",
-            fontSize: '7px',
+            fontSize: '6px',
             color: '#2a2a5a',
           }}>
             {mode === 'signup'
@@ -290,9 +286,7 @@ export function Signup() {
                     style={{ color: '#8888aa', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', transition: 'color 0.2s' }}
                     onMouseEnter={e => (e.currentTarget.style.color = '#57f7ff')}
                     onMouseLeave={e => (e.currentTarget.style.color = '#8888aa')}
-                  >
-                    continue your quest →
-                  </button>
+                  >continue your quest →</button>
                 </>
               : <>new here?{' '}
                   <button
@@ -300,9 +294,7 @@ export function Signup() {
                     style={{ color: '#8888aa', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', transition: 'color 0.2s' }}
                     onMouseEnter={e => (e.currentTarget.style.color = '#57f7ff')}
                     onMouseLeave={e => (e.currentTarget.style.color = '#8888aa')}
-                  >
-                    begin from the start →
-                  </button>
+                  >begin from the start →</button>
                 </>
             }
           </div>

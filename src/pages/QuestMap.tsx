@@ -7,8 +7,6 @@ import { LEVEL_NAMES, QUESTIONS_PER_LEVEL } from '../data/questions';
 
 const LEVEL_LABELS: Record<number, string> = LEVEL_NAMES;
 
-const ORACLE_HINT = '"The summit holds the truth.\nEach waypoint will prepare you for the next."';
-
 // Waypoint card positions (left%, top%) over the mountain SVG
 const WAYPOINT_POSITIONS: [string, string][] = [
   ['28%', '76%'],  // Level 1 - low left
@@ -22,7 +20,6 @@ export function QuestMap() {
   const { progress, getLevelStatus, getLevelProgress, logOut, user } = useGameStore();
 
   useEffect(() => {
-    // Update progress bar fill
     const fill = document.getElementById('progressFill');
     if (fill) {
       const pct = Math.round((progress.levelsCompleted.filter(Boolean).length / 4) * 100);
@@ -31,8 +28,7 @@ export function QuestMap() {
   }, [progress]);
 
   const handleLevelClick = (level: number) => {
-    const status = getLevelStatus(level);
-    if (status === 'locked') return;
+    if (getLevelStatus(level) === 'locked') return;
     navigate(`/quest/${level}`);
   };
 
@@ -47,18 +43,18 @@ export function QuestMap() {
   const completedCount = progress.levelsCompleted.filter(Boolean).length;
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative' }}>
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <SceneBackground />
 
-      {/* Logout */}
+      {/* LOG OUT */}
       <button
         onClick={() => { logOut(); navigate('/'); }}
         style={{
           position: 'fixed',
-          top: '20px',
-          right: '24px',
+          top: '14px',
+          right: '20px',
           fontFamily: "'Press Start 2P', monospace",
-          fontSize: '7px',
+          fontSize: '6px',
           color: '#2a2a4a',
           background: 'none',
           border: 'none',
@@ -73,89 +69,67 @@ export function QuestMap() {
         LOG OUT
       </button>
 
+      {/* ── HEADER ── */}
       <div style={{
+        flexShrink: 0,
         position: 'relative',
         zIndex: 10,
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '20px 20px 180px',
+        textAlign: 'center',
+        padding: '14px 20px 6px',
+        animation: 'fadeUp 0.7s ease forwards 0.2s',
+        opacity: 0,
       }}>
-        {/* Header */}
-        <div style={{
-          textAlign: 'center',
-          marginBottom: '12px',
-          animation: 'fadeUp 0.7s ease forwards 0.2s',
-          opacity: 0,
-        }}>
-          <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#8888aa', letterSpacing: '3px', marginBottom: '10px' }}>
-            MARKETINGDOESNTWORK.COM
-          </div>
-          <div style={{
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: 'clamp(14px, 4vw, 22px)',
-            color: '#ffdd57',
-            textShadow: '0 0 20px rgba(255,221,87,0.4), 3px 3px 0 #000',
-            lineHeight: '1.6',
-            animation: 'pulse-gold 3s ease-in-out infinite 1s',
-          }}>
-            DIFFERENTIATION QUEST
-          </div>
-          <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#8888aa', marginTop: '8px', letterSpacing: '2px' }}>
-            THE MOUNTAIN OF CLARITY
-          </div>
-          {user && (
-            <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#57f7ff', marginTop: '8px', letterSpacing: '1px' }}>
-              WELCOME, {user.displayName.toUpperCase() || user.email.split('@')[0].toUpperCase()}
-            </div>
-          )}
+        <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '6px', color: '#8888aa', letterSpacing: '3px', marginBottom: '4px' }}>
+          MARKETINGDOESNTWORK.COM
         </div>
-
-        {/* Oracle hint */}
         <div style={{
-          background: 'rgba(6,6,30,0.85)',
-          border: '2px solid #57f7ff',
-          padding: '12px 20px',
           fontFamily: "'Press Start 2P', monospace",
-          fontSize: '8px',
-          color: '#57f7ff',
-          letterSpacing: '1px',
-          lineHeight: '2',
-          textAlign: 'center',
-          maxWidth: '500px',
-          marginBottom: '16px',
-          boxShadow: '0 0 16px rgba(87,247,255,0.1)',
-          position: 'relative',
-          animation: 'fadeUp 0.7s ease forwards 0.5s',
-          opacity: 0,
+          fontSize: 'clamp(11px, 3vw, 18px)',
+          color: '#ffdd57',
+          textShadow: '0 0 20px rgba(255,221,87,0.4), 3px 3px 0 #000',
+          lineHeight: '1.4',
+          animation: 'pulse-gold 3s ease-in-out infinite 1s',
         }}>
-          <div style={{
-            position: 'absolute',
-            top: '-10px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '7px',
-            color: '#ffdd57',
-            background: '#060618',
-            padding: '0 8px',
-            whiteSpace: 'nowrap',
-          }}>
-            ✦ THE ORACLE ✦
-          </div>
-          {ORACLE_HINT}
+          DIFFERENTIATION QUEST
         </div>
+        <div style={{
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: '6px',
+          color: '#8888aa',
+          marginTop: '4px',
+          letterSpacing: '2px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '16px',
+        }}>
+          <span>THE MOUNTAIN OF CLARITY</span>
+          {user && <span style={{ color: '#57f7ff' }}>· {(user.displayName || user.email.split('@')[0]).toUpperCase()}</span>}
+        </div>
+      </div>
 
-        {/* Mountain scene */}
+      {/* ── MOUNTAIN (fills remaining space) ── */}
+      <div style={{
+        flex: '1 1 0',
+        minHeight: 0,
+        position: 'relative',
+        zIndex: 10,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        padding: '0 16px',
+        animation: 'fadeUp 0.8s ease forwards 0.5s',
+        opacity: 0,
+      }}>
+        {/* Mountain wrapper: sized by height so it never overflows */}
         <div style={{
           position: 'relative',
-          width: '100%',
-          maxWidth: '700px',
-          animation: 'fadeUp 0.8s ease forwards 0.8s',
-          opacity: 0,
+          height: '100%',
+          aspectRatio: '700 / 520',
+          maxWidth: '100%',
         }}>
-          <svg viewBox="0 0 700 520" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+          <svg viewBox="0 0 700 520" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
             <radialGradient id="peakGlow" cx="50%" cy="15%" r="30%">
               <stop offset="0%" stopColor="#ffdd57" stopOpacity="0.12"/>
               <stop offset="100%" stopColor="#ffdd57" stopOpacity="0"/>
@@ -170,11 +144,10 @@ export function QuestMap() {
             <polygon points="200,380 260,320 310,260 350,160 310,300 260,360 210,420" fill="#0d0d3b" opacity="0.6"/>
             <polygon points="330,185 350,160 370,185 360,195 340,195" fill="#e8e8f0" opacity="0.7"/>
 
-            {/* Path segments */}
             {[0,1].map(i => (
               <polyline key={i} points={
                 i === 0 ? "350,490 340,450 320,420 300,400" : "300,400 290,370 310,340 330,310"
-              } stroke={progress.levelsCompleted[i] ? '#8b6914' : '#8b6914'} strokeWidth="4" strokeDasharray="8,6" fill="none" opacity="0.8"/>
+              } stroke="#8b6914" strokeWidth="4" strokeDasharray="8,6" fill="none" opacity="0.8"/>
             ))}
             {[2,3].map(i => (
               <polyline key={i} points={
@@ -220,10 +193,10 @@ export function QuestMap() {
                 >
                   <div style={{
                     background: 'rgba(6,6,30,0.92)',
-                    border: `3px solid ${status === 'completed' ? '#8b6914' : status === 'available' ? '#57f7ff' : '#1a1a3a'}`,
-                    padding: '10px 14px',
+                    border: `2px solid ${status === 'completed' ? '#8b6914' : status === 'available' ? '#57f7ff' : '#1a1a3a'}`,
+                    padding: '7px 10px',
                     textAlign: 'center',
-                    minWidth: '130px',
+                    minWidth: '110px',
                     transition: 'transform 0.15s, box-shadow 0.2s',
                     position: 'relative',
                     opacity: status === 'locked' ? 0.5 : 1,
@@ -232,44 +205,24 @@ export function QuestMap() {
                   }}>
                     {status === 'completed' && (
                       <div style={{
-                        position: 'absolute', top: '-8px', right: '-8px',
-                        width: '28px', height: '28px',
+                        position: 'absolute', top: '-7px', right: '-7px',
+                        width: '22px', height: '22px',
                         background: '#ffdd57',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '12px', transform: 'rotate(12deg)',
+                        fontSize: '10px', transform: 'rotate(12deg)',
                       }}>✓</div>
                     )}
-                    <div style={{
-                      fontFamily: "'Press Start 2P', monospace",
-                      fontSize: '7px',
-                      color: status === 'completed' ? '#ffdd57' : status === 'available' ? '#57f7ff' : '#333',
-                      marginBottom: '6px',
-                    }}>LEVEL {['I','II','III','IV'][level-1]}</div>
-                    <div style={{
-                      fontFamily: "'Press Start 2P', monospace",
-                      fontSize: '8px',
-                      color: status === 'locked' ? '#333' : '#f0f0f0',
-                      lineHeight: '1.8',
-                      marginBottom: '8px',
-                    }}>
+                    <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '6px', color: status === 'completed' ? '#ffdd57' : status === 'available' ? '#57f7ff' : '#333', marginBottom: '4px' }}>
+                      LEVEL {['I','II','III','IV'][level-1]}
+                    </div>
+                    <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: status === 'locked' ? '#333' : '#f0f0f0', lineHeight: '1.8', marginBottom: '5px' }}>
                       {LEVEL_LABELS[level].split(' ').slice(1).join('\n').replace('THY ', 'THY\n')}
                     </div>
-                    <div style={{
-                      fontFamily: "'Press Start 2P', monospace",
-                      fontSize: '6px',
-                      letterSpacing: '1px',
-                      color: status === 'completed' ? '#ffdd57' : status === 'available' ? '#57f7ff' : '#2a2a4a',
-                      animation: status === 'available' ? 'blink-soft 1.5s ease-in-out infinite' : 'none',
-                    }}>
-                      {status === 'completed' ? '✦ COMPLETE ✦' : status === 'available' ? `▶ ENTER ◀` : '🔒 LOCKED'}
+                    <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '6px', letterSpacing: '1px', color: status === 'completed' ? '#ffdd57' : status === 'available' ? '#57f7ff' : '#2a2a4a', animation: status === 'available' ? 'blink-soft 1.5s ease-in-out infinite' : 'none' }}>
+                      {status === 'completed' ? '✦ COMPLETE ✦' : status === 'available' ? '▶ ENTER ◀' : '🔒 LOCKED'}
                     </div>
                     {status !== 'locked' && (
-                      <div style={{
-                        fontFamily: "'Press Start 2P', monospace",
-                        fontSize: '6px',
-                        color: '#2a2a5a',
-                        marginTop: '4px',
-                      }}>
+                      <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '5px', color: '#2a2a5a', marginTop: '3px' }}>
                         {answered}/{QUESTIONS_PER_LEVEL}
                       </div>
                     )}
@@ -279,72 +232,47 @@ export function QuestMap() {
             })}
           </div>
         </div>
+      </div>
 
+      {/* ── FOOTER: progress + CTA ── */}
+      <div style={{
+        flexShrink: 0,
+        position: 'relative',
+        zIndex: 10,
+        padding: '6px 20px 12px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '8px',
+        animation: 'fadeUp 0.7s ease forwards 1.0s',
+        opacity: 0,
+      }}>
         {/* Progress bar */}
-        <div style={{
-          width: '100%',
-          maxWidth: '700px',
-          marginTop: '12px',
-          animation: 'fadeUp 0.7s ease forwards 1.2s',
-          opacity: 0,
-        }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '7px',
-            color: '#8888aa',
-            marginBottom: '8px',
-          }}>
+        <div style={{ width: '100%', maxWidth: '600px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: "'Press Start 2P', monospace", fontSize: '6px', color: '#8888aa', marginBottom: '5px' }}>
             <span>QUEST PROGRESS</span>
-            <span>{completedCount} / 4 LEVELS COMPLETE</span>
+            <span>{completedCount} / 4 LEVELS</span>
           </div>
-          <div style={{
-            width: '100%', height: '8px',
-            background: '#1a1a3a',
-            border: '2px solid #2a2a5a',
-          }}>
+          <div style={{ width: '100%', height: '6px', background: '#1a1a3a', border: '2px solid #2a2a5a' }}>
             <div
               id="progressFill"
-              style={{
-                height: '100%',
-                background: 'linear-gradient(90deg, #8b6914, #ffdd57)',
-                width: '0%',
-                transition: 'width 1s ease',
-                boxShadow: '0 0 8px rgba(255,221,87,0.4)',
-              }}
+              style={{ height: '100%', background: 'linear-gradient(90deg, #8b6914, #ffdd57)', width: '0%', transition: 'width 1s ease', boxShadow: '0 0 8px rgba(255,221,87,0.4)' }}
             />
           </div>
         </div>
 
         {/* CTA */}
-        <div style={{
-          marginTop: '16px',
-          textAlign: 'center',
-          animation: 'fadeUp 0.7s ease forwards 1.5s',
-          opacity: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-        }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
           {progress.questCompleted ? (
-            <button
-              className="btn-gold"
-              onClick={() => navigate('/quest-complete')}
-            >
+            <button className="btn-gold" style={{ fontSize: '9px', padding: '12px 32px' }} onClick={() => navigate('/quest-complete')}>
               ▶ VIEW YOUR SCROLL
             </button>
           ) : nextLevel ? (
             <>
-              <button
-                className="btn-cyan"
-                style={{ fontSize: '11px', padding: '18px 48px' }}
-                onClick={() => navigate(`/quest/${nextLevel}`)}
-              >
+              <button className="btn-cyan" style={{ fontSize: '9px', padding: '12px 32px' }} onClick={() => navigate(`/quest/${nextLevel}`)}>
                 ▶ CONTINUE QUEST
               </button>
-              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#2a2a5a', letterSpacing: '2px' }}>
+              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '6px', color: '#2a2a5a', letterSpacing: '1px' }}>
                 LEVEL {['I','II','III','IV'][nextLevel-1]} · {LEVEL_LABELS[nextLevel]} · {QUESTIONS_PER_LEVEL} QUESTIONS
               </div>
             </>

@@ -112,25 +112,26 @@ export function OpeningOracle() {
     <div style={{ minHeight: '100vh', overflow: 'hidden', position: 'relative' }}>
       <SceneBackground />
 
-      {/* Skip button — top right */}
+      {/* Skip button — top right, prominent */}
       <button
         onClick={skip}
         style={{
           position: 'fixed',
-          top: '20px',
-          right: '24px',
+          top: '16px',
+          right: '20px',
           fontFamily: "'Press Start 2P', monospace",
           fontSize: '7px',
-          color: '#2a2a4a',
-          background: 'none',
-          border: 'none',
+          color: '#4a4a7a',
+          background: 'rgba(6,6,24,0.8)',
+          border: '2px solid #2a2a5a',
           cursor: 'pointer',
           zIndex: 200,
           letterSpacing: '1px',
-          transition: 'color 0.2s',
+          padding: '8px 12px',
+          transition: 'color 0.2s, border-color 0.2s',
         }}
-        onMouseEnter={e => (e.currentTarget.style.color = '#555577')}
-        onMouseLeave={e => (e.currentTarget.style.color = '#2a2a4a')}
+        onMouseEnter={e => { e.currentTarget.style.color = '#57f7ff'; e.currentTarget.style.borderColor = '#57f7ff'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#4a4a7a'; e.currentTarget.style.borderColor = '#2a2a5a'; }}
       >
         SKIP ▶▶
       </button>
