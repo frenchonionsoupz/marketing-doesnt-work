@@ -1,5 +1,5 @@
-import { createContext, useContext, useRef, useState, useEffect, ReactNode } from 'react';
-import { TRACKS, Track } from '../data/tracks';
+import { createContext, useContext, useRef, useState, useEffect, type ReactNode } from 'react';
+import { TRACKS, type Track } from '../data/tracks';
 
 // Fisher-Yates shuffle
 function shuffle<T>(arr: T[]): T[] {
@@ -32,7 +32,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const playlistRef = useRef<Track[]>([]);
   const indexRef = useRef(0);
   const resumedRef = useRef(false);
-  const npTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const npTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [muted, setMuted] = useState(false);
