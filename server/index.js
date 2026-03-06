@@ -139,10 +139,7 @@ app.post('/api/send-email', async (req, res) => {
 </html>`;
 
     const { data, error } = await resend.emails.send({
-      // Use verified domain in production; falls back to Resend test address in dev
-      from: process.env.NODE_ENV === 'production'
-        ? 'Differentiation Quest <quest@marketingdoesntwork.com>'
-        : 'Differentiation Quest <onboarding@resend.dev>',
+      from: 'Kyle <kyle@kylewrites.com>',
       to: [email],
       subject: `${name}, your Differentiation Scroll is ready ✦`,
       html,
