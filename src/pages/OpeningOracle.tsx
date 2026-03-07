@@ -16,45 +16,54 @@ export function OpeningOracle() {
   const [oracleVisible, setOracleVisible] = useState(false);
   const [currentLine, setCurrentLine] = useState(0);
   const [displayText, setDisplayText] = useState('');
-  const [typing, setTyping] = useState(false);
-  const [lineComplete, setLineComplete] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const [showFinal, setShowFinal] = useState(false);
-  const typeRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const charRef = useRef(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setOracleVisible(true);
-      setTimeout(() => startTyping(0), 600);
-    }, 800);
-    return () => clearTimeout(t);
-  }, []);
+  const stopTyping = () => {
+    if (intervalRef.current !== null) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  const showFullLine = (lineIdx: number) => {
+    stopTyping();
+    setDisplayText(ORACLE_LINES[lineIdx]);
+    setIsTyping(false);
+  };
 
   const startTyping = (lineIdx: number) => {
+    stopTyping();
     const text = ORACLE_LINES[lineIdx];
-    charRef.current = 0;
     setDisplayText('');
-    setTyping(true);
-    setLineComplete(false);
-
-    typeRef.current = setInterval(() => {
-      charRef.current++;
-      setDisplayText(text.slice(0, charRef.current));
-      if (charRef.current >= text.length) {
-        clearInterval(typeRef.current!);
-        setTyping(false);
-        setLineComplete(true);
+    setIsTyping(true);
+    let char = 0;
+    intervalRef.current = setInterval(() => {
+      char++;
+      setDisplayText(text.slice(0, char));
+      if (char >= text.length) {
+        stopTyping();
+        setIsTyping(false);
       }
     }, 40);
   };
 
-  const advance = () => {
-    if (typing) {
-      // Skip to end
-      clearInterval(typeRef.current!);
-      setDisplayText(ORACLE_LINES[currentLine]);
-      setTyping(false);
-      setLineComplete(true);
+  useEffect(() => {
+    const t1 = setTimeout(() => {
+      setOracleVisible(true);
+      const t2 = setTimeout(() => startTyping(0), 600);
+      return () => clearTimeout(t2);
+    }, 800);
+    return () => {
+      clearTimeout(t1);
+      stopTyping();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleScreenClick = () => {
+    if (isTyping) {
+      showFullLine(currentLine);
       return;
     }
     const next = currentLine + 1;
@@ -66,14 +75,23 @@ export function OpeningOracle() {
     startTyping(next);
   };
 
-  const skip = () => {
-    clearInterval(typeRef.current!);
+  const handlePrevious = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentLine === 0) return;
+    const prev = currentLine - 1;
+    setCurrentLine(prev);
+    showFullLine(prev);
+  };
+
+  const handleSkip = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    stopTyping();
     setShowFinal(true);
   };
 
   if (showFinal) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', background: '#000' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
         <SceneBackground />
         <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', padding: '0 24px' }}>
           <div style={{
@@ -109,12 +127,15 @@ export function OpeningOracle() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', overflow: 'hidden', position: 'relative' }}>
+    <div
+      style={{ minHeight: '100vh', overflow: 'hidden', position: 'relative', cursor: 'pointer' }}
+      onClick={handleScreenClick}
+    >
       <SceneBackground />
 
-      {/* Skip button — top right, prominent */}
+      {/* Skip button */}
       <button
-        onClick={skip}
+        onClick={handleSkip}
         style={{
           position: 'fixed',
           top: '16px',
@@ -149,6 +170,7 @@ export function OpeningOracle() {
         opacity: oracleVisible ? 1 : 0,
         transition: 'opacity 0.8s ease',
         zIndex: 10,
+        pointerEvents: 'none',
       }}>
         <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#57f7ff', letterSpacing: '2px', animation: 'blink-soft 2s ease-in-out infinite' }}>
           ✦ THE ORACLE ✦
@@ -159,18 +181,14 @@ export function OpeningOracle() {
       </div>
 
       {/* Dialogue box */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: '16px 20px 24px',
-          zIndex: 100,
-          cursor: 'pointer',
-        }}
-        onClick={advance}
-      >
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: '16px 20px 24px',
+        zIndex: 100,
+      }}>
         <div style={{ maxWidth: '780px', margin: '0 auto' }}>
           <div className="dialogue-box-ui" style={{ position: 'relative' }}>
             <div style={{
@@ -190,33 +208,64 @@ export function OpeningOracle() {
               minHeight: '60px',
             }}>
               {displayText}
-              {typing && <span className="dialogue-cursor" />}
+              {isTyping && <span className="dialogue-cursor" />}
             </div>
-            {lineComplete && (
+
+            {/* "Click anywhere" prompt — shown when line is complete */}
+            {!isTyping && (
               <div style={{
-                position: 'absolute',
-                bottom: '10px',
-                right: '16px',
+                marginTop: '12px',
                 fontFamily: "'Press Start 2P', monospace",
-                fontSize: '8px',
+                fontSize: '7px',
                 color: '#57f7ff',
-                animation: 'bounce 0.8s ease-in-out infinite',
-              }}>▼</div>
+                letterSpacing: '1px',
+                animation: 'blink-soft 1.4s ease-in-out infinite',
+              }}>
+                CLICK ANYWHERE TO CONTINUE
+              </div>
             )}
           </div>
-          {/* Progress dots */}
-          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginTop: '12px' }}>
-            {ORACLE_LINES.map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  width: '8px',
-                  height: '8px',
-                  background: i < currentLine ? '#8888aa' : i === currentLine ? '#57f7ff' : '#2a2a5a',
-                  transition: 'background 0.3s',
-                }}
-              />
-            ))}
+
+          {/* Progress dots + Previous button */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '12px', gap: '16px' }}>
+            {/* Previous button */}
+            <button
+              onClick={handlePrevious}
+              style={{
+                fontFamily: "'Press Start 2P', monospace",
+                fontSize: '7px',
+                color: currentLine > 0 ? '#8888aa' : 'transparent',
+                background: 'transparent',
+                border: 'none',
+                cursor: currentLine > 0 ? 'pointer' : 'default',
+                padding: '4px 8px',
+                letterSpacing: '1px',
+                pointerEvents: currentLine > 0 ? 'all' : 'none',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={e => { if (currentLine > 0) e.currentTarget.style.color = '#f0f0f0'; }}
+              onMouseLeave={e => { if (currentLine > 0) e.currentTarget.style.color = '#8888aa'; }}
+            >
+              ◀ PREVIOUS
+            </button>
+
+            {/* Dots */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {ORACLE_LINES.map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    background: i < currentLine ? '#8888aa' : i === currentLine ? '#57f7ff' : '#2a2a5a',
+                    transition: 'background 0.3s',
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Spacer to balance the Previous button */}
+            <div style={{ width: '88px' }} />
           </div>
         </div>
       </div>
