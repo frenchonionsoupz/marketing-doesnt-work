@@ -33,7 +33,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playlistRef = useRef<Track[]>([]);
   const indexRef = useRef(0);
-  const resumedRef = useRef(false);
+  const failCountRef = useRef(0);
   const npTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -59,7 +59,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         npTimerRef.current = setTimeout(() => setNowPlayingVisible(false), 4000);
       })
       .catch(() => {
-        // Autoplay blocked — will resume on first user interaction
+        // Autoplay blocked (or load failed — the 'error' listener handles that).
+        // Will resume on next user interaction.
+        setPlaying(false);
         setCurrentTrack(track);
       });
   };
@@ -85,24 +87,42 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       playIndexRef.current(next);
     };
 
+    // A track failed to load (missing file, bad name, bucket not public) — skip it
+    const onError = () => {
+      const track = playlistRef.current[indexRef.current];
+      console.error('[audio] failed to load track:', track?.file, audio.error);
+      failCountRef.current += 1;
+      if (failCountRef.current >= playlistRef.current.length) {
+        console.error('[audio] every track failed to load — check the Supabase "audio" bucket is public and filenames match src/data/tracks.ts');
+        setPlaying(false);
+        return;
+      }
+      const next = (indexRef.current + 1) % playlistRef.current.length;
+      playIndexRef.current(next);
+    };
+    const onPlaying = () => { failCountRef.current = 0; setPlaying(true); };
+
     audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
+    audio.addEventListener('playing', onPlaying);
     playIndexRef.current(0);
 
     return () => {
       clearTimeout(npTimerRef.current);
       audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
+      audio.removeEventListener('playing', onPlaying);
       audio.pause();
     };
   }, []);
 
-  // If browser blocked autoplay, resume on first user interaction
+  // If browser blocked autoplay, keep retrying on user interaction until it plays.
+  // Capture phase so buttons that call stopPropagation() still count.
   useEffect(() => {
+    if (playing) return;
     const resume = () => {
-      if (resumedRef.current || playing) return;
-      resumedRef.current = true;
       const audio = audioRef.current;
-      if (!audio) return;
-
+      if (!audio || !audio.paused || !audio.src) return;
       audio.play()
         .then(() => {
           setPlaying(true);
@@ -117,11 +137,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         .catch(() => {});
     };
 
-    document.addEventListener('click', resume, { once: true });
-    document.addEventListener('keydown', resume, { once: true });
+    const events = ['pointerdown', 'click', 'keydown', 'touchstart'] as const;
+    events.forEach(ev => document.addEventListener(ev, resume, { capture: true }));
     return () => {
-      document.removeEventListener('click', resume);
-      document.removeEventListener('keydown', resume);
+      events.forEach(ev => document.removeEventListener(ev, resume, { capture: true }));
     };
   }, [playing]);
 
