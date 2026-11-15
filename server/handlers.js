@@ -3,13 +3,28 @@ import { Resend } from 'resend';
 
 // Shared by the local Express server (server/index.js) and the
 // Vercel serverless functions (api/*.js).
+// Accept whichever name the key was saved under in Vercel
+export const CLAUDE_KEY_NAMES = [
+  'CLAUDE_API_KEY', 'ANTHROPIC_API_KEY', 'VITE_CLAUDE_API_KEY',
+  'VITE_ANTHROPIC_API_KEY', 'CLAUDE_KEY', 'ANTHROPIC_KEY',
+];
+export const findClaudeKey = () => {
+  for (const name of CLAUDE_KEY_NAMES) {
+    const v = process.env[name]?.trim();
+    if (v) return v;
+  }
+  return null;
+};
 const getAnthropic = () => {
-  if (!process.env.CLAUDE_API_KEY) throw new Error('CLAUDE_API_KEY is not set on the server');
-  return new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
+  const apiKey = findClaudeKey();
+  if (!apiKey) {
+    throw new Error('No Claude API key found. In Vercel > Settings > Environment Variables add CLAUDE_API_KEY (tick Production), then Redeploy.');
+  }
+  return new Anthropic({ apiKey });
 };
 const getResend = () => {
-  if (!process.env.RESEND_API_KEY) throw new Error('RESEND_API_KEY is not set on the server');
-  return new Resend(process.env.RESEND_API_KEY);
+  if (!process.env.RESEND_API_KEY?.trim()) throw new Error('RESEND_API_KEY is not set on the server');
+  return new Resend(process.env.RESEND_API_KEY.trim());
 };
 
 // ──────────────────────────────────────────────
@@ -36,7 +51,7 @@ export async function generateProfile(req, res) {
     const userMessage = `Here are the respondent's word-for-word answers:\n\n${answersBlock}\n\nWrite their Differentiation Profile now.`;
 
     const message = await getAnthropic().messages.create({
-      model: 'claude-opus-4-6',
+      model: process.env.CLAUDE_MODEL || 'claude-opus-4-6',
       max_tokens: 1500,
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
