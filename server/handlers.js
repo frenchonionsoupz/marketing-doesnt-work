@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Resend } from 'resend';
+import { profileToHtml } from './profileFormat.js';
 
 // Shared by the local Express server (server/index.js) and the
 // Vercel serverless functions (api/*.js).
@@ -78,24 +79,13 @@ export async function sendEmail(req, res) {
       return res.status(400).json({ error: 'email, name, profile required' });
     }
 
-    // Format profile as clean HTML sections
-    const profileHtml = profile
-      .split('\n')
-      .map(line => {
-        const l = line.trim();
-        if (!l) return '';
-        if (l.startsWith('##')) return `<h2 style="color:#ffdd57;font-size:16px;margin:24px 0 8px;">${l.replace(/^##\s*/, '')}</h2>`;
-        if (l.startsWith('#')) return `<h1 style="color:#ffdd57;font-size:20px;margin:28px 0 12px;">${l.replace(/^#\s*/, '')}</h1>`;
-        if (l.startsWith('- ') || l.startsWith('• ')) return `<li style="color:#f0f0f0;margin:6px 0 6px 16px;">${l.replace(/^[-•]\s*/, '')}</li>`;
-        if (l.match(/^\d+\./)) return `<li style="color:#f0f0f0;margin:6px 0 6px 16px;">${l.replace(/^\d+\.\s*/, '')}</li>`;
-        if (l.startsWith('**') && l.endsWith('**')) return `<p style="color:#57f7ff;font-weight:bold;margin:12px 0;">${l.replace(/\*\*/g, '')}</p>`;
-        return `<p style="color:#f0f0f0;margin:10px 0;line-height:1.7;">${l}</p>`;
-      })
-      .join('\n');
+    const profileHtml = profileToHtml(profile);
+    const safeName = String(name).replace(/[<>&"]/g, '');
 
     const html = `<!DOCTYPE html>
 <html>
 <head>
+  <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;700&display=swap" rel="stylesheet"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Your Differentiation Profile</title>
@@ -122,7 +112,7 @@ export async function sendEmail(req, res) {
             <td style="padding:28px 40px;border-bottom:1px solid #1a1a4a;">
               <p style="color:#8888aa;font-size:10px;letter-spacing:2px;margin:0 0 8px;">✦ THE ORACLE ✦</p>
               <p style="color:#f0f0f0;font-size:13px;line-height:1.9;margin:0;">
-                Greetings, <strong style="color:#57f7ff;">${name}</strong>.<br/><br/>
+                Greetings, <strong style="color:#57f7ff;">${safeName}</strong>.<br/><br/>
                 You have completed the Differentiation Quest. What follows is your Differentiation Profile — the truth of what makes you different, written in plain language, ready to be used.
               </p>
             </td>
@@ -157,7 +147,7 @@ export async function sendEmail(req, res) {
     const { data, error } = await getResend().emails.send({
       from: process.env.EMAIL_FROM || 'Kyle <kyle@kylewrites.com>',
       to: [email],
-      subject: `${name}, your Differentiation Scroll is ready ✦`,
+      subject: `${safeName}, your Differentiation Scroll is ready ✦`,
       html,
       text: `Your Differentiation Profile\n\n${profile}`,
     });

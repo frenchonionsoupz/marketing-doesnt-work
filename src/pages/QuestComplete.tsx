@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { SceneBackground } from '../components/SceneBackground';
 import { OracleSvg } from '../components/OracleSvg';
+import { ScrollText } from '../components/ScrollText';
 
 const ORACLE_LINES = [
   "You came to me with a business that sounded like everyone else's.",
@@ -30,6 +31,7 @@ export function QuestComplete() {
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const rafRef = useRef<number>(0);
   const typeRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -372,15 +374,7 @@ export function QuestComplete() {
                   <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#ffdd57', letterSpacing: '3px', marginBottom: '16px' }}>
                     YOUR DIFFERENTIATION PROFILE
                   </div>
-                  <div style={{
-                    fontFamily: "'VT323', monospace",
-                    fontSize: '18px',
-                    color: '#f0f0f0',
-                    lineHeight: '1.7',
-                    whiteSpace: 'pre-wrap',
-                  }}>
-                    {profile}
-                  </div>
+                  <ScrollText profile={profile} />
                 </div>
               )}
               <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -388,17 +382,27 @@ export function QuestComplete() {
                   <button
                     className="btn-gold"
                     style={{ fontSize: '9px', padding: '14px 28px' }}
-                    onClick={() => {
-                      const blob = new Blob([profile], { type: 'text/plain' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = 'differentiation-profile.txt';
-                      a.click();
-                      URL.revokeObjectURL(url);
+                    disabled={downloading}
+                    onClick={async () => {
+                      setDownloading(true);
+                      try {
+                        const { downloadScrollPdf } = await import('../lib/scrollPdf');
+                        await downloadScrollPdf(profile, user?.displayName || user?.email?.split('@')[0] || 'Traveler');
+                      } catch (err) {
+                        console.error('PDF failed, falling back to text', err);
+                        const blob = new Blob([profile], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'differentiation-scroll.txt';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      } finally {
+                        setDownloading(false);
+                      }
                     }}
                   >
-                    ↓ DOWNLOAD SCROLL
+                    {downloading ? '⌛ PREPARING PDF...' : '↓ DOWNLOAD SCROLL (PDF)'}
                   </button>
                 )}
                 <button
